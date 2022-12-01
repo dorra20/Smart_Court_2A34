@@ -5,12 +5,13 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+    connection c;
+    bool test=c.createconnect();
     MainWindow w;
-    Connection c;
-    bool test=c.ouvrirConnection();
+
     if(test)
     {w.show();
-        QMessageBox::critical(nullptr, QObject::tr("database is open"),
+        QMessageBox::information(nullptr, QObject::tr("database is open"),
                     QObject::tr("connection successful.\n"
                                 "Click Cancel to exit."), QMessageBox::Cancel);
 
@@ -22,4 +23,5 @@ int main(int argc, char *argv[])
 
 
 
-return a.exec();}
+    return a.exec();
+}
