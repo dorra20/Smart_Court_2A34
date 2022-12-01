@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include"invite.h"
 #include "smtp.h"
+#include "arduino.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -39,9 +40,14 @@ private slots:
 
     void on_pushButton_envoyer_mail_l_clicked();
 
+    void update_ard();
+
+    void on_pushButton_porte_clicked();
+
 private:
     Ui::MainWindow *ui;
     Invite I;
     Smtp * S;
+    Arduino A;
 };
 #endif // MAINWINDOW_H

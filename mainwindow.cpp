@@ -22,6 +22,15 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     ui->le_cin->setValidator(new QIntValidator(0,9999999,this));
     ui->tab_invite->setModel(I.afficher());
+    int ret=A.connect_arduino(); // lancer la connexion à arduino
+        switch(ret){
+        case(0):qDebug()<< "arduino is available and connected to : "<< A.getarduino_port_name();
+            break;
+        case(1):qDebug() << "arduino is available but not connected to :" <<A.getarduino_port_name();
+           break;
+        case(-1):qDebug() << "arduino is not available";
+        }
+         QObject::connect(A.getserial(),SIGNAL(readyRead()),this,SLOT(update_ard()));
 }
 
 MainWindow::~MainWindow()
@@ -314,4 +323,24 @@ void MainWindow::on_pushButton_envoyer_mail_l_clicked()
                              QObject::tr("Email envoyé avec succes.\n"
                                          ), QMessageBox::Cancel);
     I.notif("gestion des invites","mail envoyé");
+}
+
+void MainWindow::update_ard()
+{
+//data="";
+QByteRef a=A.read_from_arduino()[0];
+
+if (a == '0')
+    {
+     ui->label_porte->setText("salle fermee");
+    }
+    else
+    {
+       ui->label_porte->setText("salle ouverte");
+    }
+}
+
+void MainWindow::on_pushButton_porte_clicked()
+{
+    A.write_to_arduino("fermer la porte");
 }
