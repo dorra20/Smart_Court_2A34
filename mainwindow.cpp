@@ -64,6 +64,13 @@ MainWindow::MainWindow(QWidget *parent):
          ui->archiveView->setModel(Aff.afficherArchive());
          ui->comboBoxSupp->setModel(Aff.afficher());
           ui->comboBoxM->setModel(Aff.afficher());
+     ////////////////////////////////////////////////////////////// bechir
+
+          QDateTime date=QDateTime::currentDateTime() ;
+          ui->dateTimeEdit->setDateTime(date);
+          ui->tab->setModel(aud.afficher());
+
+////////////////////////////////////
 }
 
 MainWindow::~MainWindow()
@@ -1106,4 +1113,468 @@ void MainWindow::on_pushButton_tri_d_clicked()
 {
     ui->tab_affaire->setModel(Aff.affichertri());
 }
+////////////////////////////////////////////////////////////////////////////// bechir
+void MainWindow::on_Valider_clicked()
+{
 
+    QString Num=ui->lineEdit_id->text();
+    QDateTime date=ui->dateTimeEdit->dateTime();
+
+     QString heure=ui->lineEdit_heure->text();
+     QString genre=ui->c_genre->currentText();
+
+
+
+    Audiance aud(Num,date,heure,genre);
+   bool test=aud.ajouter();
+   QMessageBox msgBox;
+   if(test)
+   {
+      msgBox.setText("ajouter avec succés");
+   ui->tab->setModel(aud.afficher());
+   }
+   else {
+       msgBox.setText("echec d'ajout");
+   msgBox.exec();
+}
+
+}
+
+void MainWindow::on_Update_clicked()
+{
+  QString Num=ui->lineEdit_id->text();
+  QString heure=ui->lineEdit_heure->text();
+
+
+         QDateTime date=ui->dateTimeEdit->dateTime();
+         QString genre=ui->c_genre->currentText();
+    Audiance aud(Num,date,heure,genre);
+         bool test=aud.update(Num);
+         if(test)
+       {
+            ui->tab->setModel(aud.afficher());
+
+       QMessageBox::information(nullptr, QObject::tr("modifier un audiance"),
+                         QObject::tr("audiance modifié.\n"
+                                     "Click Cancel to exit."), QMessageBox::Cancel);
+
+
+
+
+       }
+         else
+             QMessageBox::critical(nullptr, QObject::tr("modifier un audiance"),
+                         QObject::tr("Erreur !.\n"
+                                     "Click Cancel to exit."), QMessageBox::Cancel);
+
+            ui->tab->setModel(aud.afficher());
+
+}
+
+
+void MainWindow::on_tab_activated(const QModelIndex &index)
+{
+
+    QSqlQuery query;
+
+    QString val=ui->tab->model()->data(index).toString();
+      query.prepare("Select * from AUDIANCE where NUM=:num");
+
+      query.bindValue(":num",val);
+
+
+      if(query.exec())
+         {
+             while(query.next())
+             {
+
+                 ui->lineEdit_id->setText(query.value(0).toString());
+                 ui->dateTimeEdit->setDateTime(query.value(1).toDateTime());
+                 ui->lineEdit_heure->setText(query.value(2).toString());
+
+             }
+
+}
+}
+
+void MainWindow::on_Update_2_clicked()
+{
+
+
+
+    Audiance aud ;
+        aud.setNum(ui->le_id_sup->text());
+        bool test=aud.supprimer(aud.getNUM());
+        QMessageBox msgBox;
+        if(test)
+        {
+             ui->tab->setModel(aud.afficher());
+            msgBox.setText("suppression avec succés");
+        }
+        else{
+            msgBox.setText("echeck de suppression");
+        msgBox.exec();
+}
+}
+
+
+
+void MainWindow::on_pushButton_2_clicked()
+{
+    ui->tab->setModel(aud.trieid());
+}
+
+
+
+void MainWindow::on_pushButton_4_clicked()
+{
+     ui->tab->setModel(aud.triehorloge());
+}
+
+
+
+void MainWindow::on_pushButton_6_clicked()
+{
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Excel file"), qApp->applicationDirPath (),
+
+                                                          tr("Excel Files (*.xls)"));
+
+          if (fileName.isEmpty())
+
+              return;
+
+
+
+          ExportExcelObject obj(fileName, "mydata", ui->tab);
+
+
+          //colums to export
+
+          obj.addField(0, "NUM", "char(20)");
+
+          obj.addField(1, "HEURE", "char(20)");
+
+          int retVal = obj.export2Excel();
+
+          if( retVal > 0)
+
+          {
+
+              QMessageBox::information(this, tr("Done"),
+
+                                       QString(tr("%1 records exported!")).arg(retVal)
+
+                                       );
+
+          }
+}
+
+
+
+void MainWindow::on_pushButton_3_clicked()
+{
+    QString strStream;
+                QTextStream out(&strStream);
+
+                const int rowCount = ui->tab->model()->rowCount();
+                const int columnCount = ui->tab->model()->columnCount();
+                QString TT = QDate::currentDate().toString("yyyy/MM/dd");
+                out <<"<html>\n"
+                      "<head>\n"
+                       "<meta Content=\"Text/html; charset=Windows-1251\">\n"
+                    << "<title> LISTE DES AUDIANCES <title>\n "
+                    << "</head>\n"
+                    "<body bgcolor=#ffffff link=#5000A0>\n"
+                    "<h1 style=\"text-align: center;\"><strong> ***LISTE DES AUDIANCES *** "+TT+"</strong></h1>"
+                    "<table style=\"text-align: center; font-size: 20px;\" border=1>\n "
+                      "</br> </br>";
+                // headers
+                out << "<thead><tr bgcolor=#d6e5ff>";
+                for (int column = 0; column < columnCount; column++)
+                    if (!ui->tab->isColumnHidden(column))
+                        out << QString("<th>%1</th>").arg(ui->tab->model()->headerData(column, Qt::Horizontal).toString());
+                out << "</tr></thead>\n";
+
+                // data table
+                for (int row = 0; row < rowCount; row++) {
+                    out << "<tr>";
+                    for (int column = 0; column < columnCount; column++) {
+                        if (!ui->tab->isColumnHidden(column)) {
+                            QString data =ui->tab->model()->data(ui->tab->model()->index(row, column)).toString().simplified();
+                            out << QString("<td bkcolor=0>%1</td>").arg((!data.isEmpty()) ? data : QString("&nbsp;"));
+                        }
+                    }
+                    out << "</tr>\n";
+                }
+                out <<  "</table>\n"
+                    "</body>\n"
+                    "</html>\n";
+
+                QTextDocument *document = new QTextDocument();
+                document->setHtml(strStream);
+
+                QPrinter printer;
+
+                QPrintDialog *test = new QPrintDialog(&printer, NULL);
+                if (test->exec() == QDialog::Accepted) {
+                    document->print(&printer);
+                }
+
+                delete document;
+
+}
+
+void MainWindow::on_pushButton_5_clicked()
+{
+    QSqlQuery q1,q2,q3;
+            qreal tot=0,c1=0,c2=0;
+            q1.prepare("Select * from AUDIANCE");
+            if(q1.exec())
+            {
+                while (q1.next())
+                {
+                    tot++;
+                }
+            }
+            q2.prepare("Select * from AUDIANCE where genre ='Homme'");
+            if(q2.exec())
+            {
+                while (q2.next())
+                {
+                    c1++;
+                }
+            }
+            q3.prepare("Select * from AUDIANCE where genre ='Femme'");
+            if(q3.exec())
+            {
+                while (q3.next())
+                {
+                    c2++;
+                }
+            }
+
+            c1=c1/tot;
+            c2=c2/tot;
+
+
+            QPieSeries *series = new QPieSeries();
+                    series->append("Homme",c1);
+                    series->append("Femme",c2);
+
+                    QPieSlice *slice0 = series->slices().at(0);
+                    slice0->setExploded();
+                    slice0->setLabelVisible();
+                    slice0->setPen(QPen(Qt::darkGray, 2));
+                    slice0->setBrush(Qt::gray);
+                    QPieSlice *slice1 = series->slices().at(1);
+                    slice1->setExploded();
+                    slice1->setLabelVisible();
+                    slice1->setPen(QPen(Qt::darkRed, 2));
+                    slice1->setBrush(Qt::red);
+
+                    QChart *chart = new QChart();
+                    chart->addSeries(series);
+                    chart->setTitle("les genres");
+                    chart->setAnimationOptions(QChart::AllAnimations);
+                    chart->legend()->hide();
+                    QChartView *chartView = new QChartView(chart);
+                    chartView->setRenderHint(QPainter::Antialiasing);
+                    QGridLayout *layout = new QGridLayout();
+                    layout->addWidget(chartView);
+                    ui->statistiques_2->setLayout(layout);
+}
+
+void MainWindow::on_pushButton_search_bechir_clicked()
+{
+    /*QString id=ui->lineEdit_recherche->text();
+    ui->tab->setModel(ent.rechercher());*/
+    class Audiance aud ;
+
+    ui->tab->setModel(aud.afficher());
+
+
+           aud.rechercher(ui);
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void MainWindow::on_pushButton_menu_juges_clicked()
+{
+        ui->stackedWidget->setCurrentIndex(1);
+}
+
+void MainWindow::on_pushButton_menu_invites_clicked()
+{
+    bool nom;
+    bool mp;
+    QString Nom;
+    QString mdp;
+    QMessageBox msgBox;
+    QInputDialog* i = new QInputDialog(this);
+
+    do{
+     Nom = i->getText(this, tr("QInputDialog::getText()"),
+                                           tr("Nom d'utilisateur:"), QLineEdit::Normal,
+                                           "", &nom);
+      mdp = i->getText(this, tr("QInputDialog::getText()"),
+                                           tr("Mot de passe :"), QLineEdit::Normal,
+                                           "", &mp);
+      if ((nom && mp) && (Nom.isEmpty() || mdp.isEmpty()))
+      {
+          msgBox.setText("Veuillez saisir le nom d'utilsateur et le mot de passe !");
+          msgBox.setIcon(QMessageBox::Critical);
+          msgBox.exec();
+      }
+    }while((nom && mp) && (Nom.isEmpty() || mdp.isEmpty()));
+      if (nom && mp)
+      {
+      if (Nom == "invites" and mdp == "admin")
+      {
+          msgBox.setText("Connecté !");
+          msgBox.setIcon(QMessageBox::Information);
+          msgBox.exec();
+        ui->stackedWidget->setCurrentIndex(3);
+      }
+      else
+      {
+
+         msgBox.setText("Nom d'utilsateur ou mot de passe erroné !");
+         msgBox.setIcon(QMessageBox::Critical);
+         msgBox.exec();
+      }
+      }
+
+
+}
+
+void MainWindow::on_pushButton_men_audience_clicked()
+{
+    bool nom;
+    bool mp;
+    QString Nom;
+    QString mdp;
+    QMessageBox msgBox;
+    QInputDialog* i = new QInputDialog(this);
+
+    do{
+     Nom = i->getText(this, tr("QInputDialog::getText()"),
+                                           tr("Nom d'utilisateur:"), QLineEdit::Normal,
+                                           "", &nom);
+      mdp = i->getText(this, tr("QInputDialog::getText()"),
+                                           tr("Mot de passe :"), QLineEdit::Normal,
+                                           "", &mp);
+      if ((nom && mp) && (Nom.isEmpty() || mdp.isEmpty()))
+      {
+          msgBox.setText("Veuillez saisir le nom d'utilsateur et le mot de passe !");
+          msgBox.setIcon(QMessageBox::Critical);
+          msgBox.exec();
+      }
+    }while((nom && mp) && (Nom.isEmpty() || mdp.isEmpty()));
+      if (nom && mp)
+      {
+      if (Nom == "audiences" and mdp == "admin")
+      {
+          msgBox.setText("Connecté !");
+          msgBox.setIcon(QMessageBox::Information);
+          msgBox.exec();
+        ui->stackedWidget->setCurrentIndex(5);
+      }
+      else
+      {
+
+         msgBox.setText("Nom d'utilsateur ou mot de passe erroné !");
+         msgBox.setIcon(QMessageBox::Critical);
+         msgBox.exec();
+      }
+      }
+}
+
+void MainWindow::on_pushButton_menu_last_clicked()
+{
+    bool nom;
+    bool mp;
+    QString Nom;
+    QString mdp;
+    QMessageBox msgBox;
+    QInputDialog* i = new QInputDialog(this);
+
+    do{
+     Nom = i->getText(this, tr("QInputDialog::getText()"),
+                                           tr("Nom d'utilisateur:"), QLineEdit::Normal,
+                                           "", &nom);
+      mdp = i->getText(this, tr("QInputDialog::getText()"),
+                                           tr("Mot de passe :"), QLineEdit::Normal,
+                                           "", &mp);
+      if ((nom && mp) && (Nom.isEmpty() || mdp.isEmpty()))
+      {
+          msgBox.setText("Veuillez saisir le nom d'utilsateur et le mot de passe !");
+          msgBox.setIcon(QMessageBox::Critical);
+          msgBox.exec();
+      }
+    }while((nom && mp) && (Nom.isEmpty() || mdp.isEmpty()));
+      if (nom && mp)
+      {
+      if (Nom == "avocats" and mdp == "admin")
+      {
+          msgBox.setText("Connecté !");
+          msgBox.setIcon(QMessageBox::Information);
+          msgBox.exec();
+        ui->stackedWidget->setCurrentIndex(6);
+      }
+      else
+      {
+
+         msgBox.setText("Nom d'utilsateur ou mot de passe erroné !");
+         msgBox.setIcon(QMessageBox::Critical);
+         msgBox.exec();
+      }
+      }
+}
+
+void MainWindow::on_pushButton_menu_affaires_clicked()
+{
+    bool nom;
+    bool mp;
+    QString Nom;
+    QString mdp;
+    QMessageBox msgBox;
+    QInputDialog* i = new QInputDialog(this);
+
+    do{
+     Nom = i->getText(this, tr("QInputDialog::getText()"),
+                                           tr("Nom d'utilisateur:"), QLineEdit::Normal,
+                                           "", &nom);
+      mdp = i->getText(this, tr("QInputDialog::getText()"),
+                                           tr("Mot de passe :"), QLineEdit::Normal,
+                                           "", &mp);
+      if ((nom && mp) && (Nom.isEmpty() || mdp.isEmpty()))
+      {
+          msgBox.setText("Veuillez saisir le nom d'utilsateur et le mot de passe !");
+          msgBox.setIcon(QMessageBox::Critical);
+          msgBox.exec();
+      }
+    }while((nom && mp) && (Nom.isEmpty() || mdp.isEmpty()));
+      if (nom && mp)
+      {
+      if (Nom == "affaire" and mdp == "admin")
+      {
+          msgBox.setText("Connecté !");
+          msgBox.setIcon(QMessageBox::Information);
+          msgBox.exec();
+        ui->stackedWidget->setCurrentIndex(4);
+      }
+      else
+      {
+
+         msgBox.setText("Nom d'utilsateur ou mot de passe erroné !");
+         msgBox.setIcon(QMessageBox::Critical);
+         msgBox.exec();
+      }
+      }
+}
+
+void MainWindow::on_pushButton_deco_clicked()
+{
+    ui->stackedWidget->setCurrentIndex(0);
+}

@@ -6,8 +6,7 @@
 QT       += serialport
 QT       += core gui sql printsupport
 QT       += charts network
-QT += network multimedia
-
+QT       += network multimedia qml
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -30,6 +29,8 @@ CONFIG += c++11
 SOURCES += \
     affaire.cpp \
     arduino.cpp \
+    audiance.cpp \
+    exportexcelobject.cpp \
     invite.cpp \
     juge.cpp \
     login_juge.cpp \
@@ -42,6 +43,8 @@ SOURCES += \
 HEADERS += \
     affaire.h \
     arduino.h \
+    audiance.h \
+    exportexcelobject.h \
     invite.h \
     juge.h \
     login_juge.h \

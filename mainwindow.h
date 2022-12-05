@@ -15,7 +15,6 @@
 #include <QtCharts/QChartView>
 #include <QtCharts/QLineSeries>
 #include "juge.h"
-
 #include "affaire.h"
 
 //////////////////////////////////////// login
@@ -33,6 +32,28 @@
 #include "invite.h"
 #include "smtp.h"
 
+/////////////////////////////////////// bechir
+#include <QMainWindow>
+#include<QSqlTableModel>
+#include<QTableView>
+#include "audiance.h"
+#include <QTimer>
+#include <QWidget>
+#include <QGroupBox>
+#include <QSystemTrayIcon>
+#include <QToolTip>
+#include <QMenu>
+#include <QDialog>
+#include <QtQuick/QQuickWindow>
+#include <QtQuick/QQuickRenderControl>
+#include <QtQml/QQmlComponent>
+#include <QtQuickControls2/QtQuickControls2>
+#include <QFileDialog>
+#include <QFileInfo>
+#include <exportexcelobject.h>
+#include <QtPrintSupport/QPrinterInfo>
+#include <QPrinter>
+/////////////
 namespace Ui {
 class MainWindow;
 }
@@ -135,6 +156,39 @@ private slots:
 
     void on_pushButton_tri_d_clicked();
 
+    //////////////////////////////////////////////////////// bechir audience
+    void on_Valider_clicked();
+
+    void on_Update_clicked();
+
+    void on_tab_activated(const QModelIndex &index);
+
+    void on_Update_2_clicked();
+
+    void on_pushButton_6_clicked();
+
+    void on_pushButton_2_clicked();
+
+    void on_pushButton_4_clicked();
+
+    void on_pushButton_3_clicked();
+
+    void on_pushButton_5_clicked();
+
+    void on_pushButton_search_bechir_clicked();
+   /////////////////////////
+    void on_pushButton_menu_juges_clicked();
+
+    void on_pushButton_menu_invites_clicked();
+
+    void on_pushButton_men_audience_clicked();
+
+    void on_pushButton_menu_last_clicked();
+
+    void on_pushButton_menu_affaires_clicked();
+
+    void on_pushButton_deco_clicked();
+
 private:
     Ui::MainWindow *ui;
     Juge J;
@@ -146,6 +200,7 @@ private:
     Smtp* smtp;
     QByteArray data;
     QString serialb;
+    Audiance aud ;
 };
 
 #endif // MAINWINDOW_H
