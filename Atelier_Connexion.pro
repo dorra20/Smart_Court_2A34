@@ -28,28 +28,29 @@ DEFINES += QT_DEPRECATED_WARNINGS
 CONFIG += c++11
 
 SOURCES += \
+    affaire.cpp \
     arduino.cpp \
     invite.cpp \
     juge.cpp \
-    login.cpp \
     login_juge.cpp \
         main.cpp \
         mainwindow.cpp \
     connection.cpp \
+    qcustomplot.cpp \
     smtp.cpp
 
 HEADERS += \
+    affaire.h \
     arduino.h \
     invite.h \
     juge.h \
-    login.h \
     login_juge.h \
         mainwindow.h \
     connection.h \
+    qcustomplot.h \
     smtp.h
 
 FORMS += \
-        login.ui \
         mainwindow.ui
 
 # Default rules for deployment.

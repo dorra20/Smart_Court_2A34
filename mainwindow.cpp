@@ -11,6 +11,31 @@ MainWindow::MainWindow(QWidget *parent):
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    //////////////////////////////////// arduino
+    int ret=A.connect_arduino(); // lancer la connexion à arduino
+        switch(ret){
+        case(0):qDebug()<< "arduino is available and connected to : "<< A.getarduino_port_name();
+            break;
+        case(1):qDebug() << "arduino is available but not connected to :" <<A.getarduino_port_name();
+           break;
+        case(-1):qDebug() << "arduino is not available";
+        }
+         QObject::connect(A.getserial(),SIGNAL(readyRead()),this,SLOT(update_ard()));
+    //////////////////////////////////////////////////////////////////// login
+    ui->login_id->setPlaceholderText("Entrer votre id");
+    ui->login_pass->setPlaceholderText("Entrer votre mot de passe");
+
+    ui->signup_id->setPlaceholderText("Entrer votre id");
+    ui->signup_pass->setPlaceholderText("Entrer un mot de passe");
+    ui->signup_mail->setPlaceholderText("Entrer votre mail");
+
+    ui->r_mail->setPlaceholderText("Entrer votre mail de récupération");
+
+    ui->login_id->setValidator(new QIntValidator(100, 999999, this));
+    ui->signup_id->setValidator(new QIntValidator(100, 999999, this));
+
+    ////////////////////////////////////////////////////// aymen
+    ui->stackedWidget->setCurrentIndex(0);
     ui->l_id->setPlaceholderText("Entrer votre id");
     ui->l_nom->setPlaceholderText("Entrer votre nom");
     ui->l_prenom->setPlaceholderText("Entrer votre prenom");
@@ -32,18 +57,13 @@ MainWindow::MainWindow(QWidget *parent):
     //////////////////////////////////////// lina
     ui->le_cin->setValidator(new QIntValidator(0,9999999,this));
     ui->tab_invite->setModel(I.afficher());
-    int ret=A.connect_arduino(); // lancer la connexion à arduino
-        switch(ret){
-        case(0):qDebug()<< "arduino is available and connected to : "<< A.getarduino_port_name();
-            break;
-        case(1):qDebug() << "arduino is available but not connected to :" <<A.getarduino_port_name();
-           break;
-        case(-1):qDebug() << "arduino is not available";
-        }
-         QObject::connect(A.getserial(),SIGNAL(readyRead()),this,SLOT(update_ard()));
 
 
-         //////////////////////////////////////////////////////////////////
+         ////////////////////////////////////////////////////////////////// dorra
+          ui->tab_affaire->setModel(Aff.afficher());
+         ui->archiveView->setModel(Aff.afficherArchive());
+         ui->comboBoxSupp->setModel(Aff.afficher());
+          ui->comboBoxM->setModel(Aff.afficher());
 }
 
 MainWindow::~MainWindow()
@@ -51,7 +71,101 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+/////////////////////////////////////////////////////////////////////// login
 
+void MainWindow::on_b_inscrire_clicked()
+{
+    int id=ui->signup_id->text().toInt();
+    QString password=ui->signup_pass->text();
+    QString mail=ui->signup_mail->text();
+    Login_juge L(id, password, mail);
+
+bool test=L.ajouter();
+if(test)
+{
+ui->statut1->setText("Ajout effectué");
+ui->signup_id->clear();
+ui->signup_pass->clear();
+ui->signup_mail->clear();
+}
+else
+ui->statut1->setText("Ajout non effectué");
+}
+
+void MainWindow::on_b_connexion_clicked()
+{
+    QString id=ui->login_id->text();
+    QString  password=ui->login_pass->text();
+    QSqlQuery qry;
+    if(qry.exec("select * from juge where id='"+id +"' and password='"+password+"'")) {
+       int count=0;
+        while (qry.next()){
+               count++;
+           }
+        if(count==1){
+            ui->statut->setText("Connexion effectuée...");
+            ui->stackedWidget->setCurrentIndex(1);
+            ui->login_id->clear();
+            ui->login_pass->clear();
+        }
+        else{
+            ui->statut->setText("Connexion non non effectuée\nEntrer votre mail puis\nclique sur cette serrure =>");}
+}}
+
+
+void MainWindow::on_b_recuperation_clicked()
+{
+    QString pass;
+    QString id=ui->login_id->text();
+    QString  mail=ui->r_mail->text();
+    QSqlQuery qry;
+    if(qry.exec("select DISTINCT(password) from juge where id='"+id +"' and mail='"+mail+"'")) {
+       int count=0;
+        while (qry.next()){
+               count++;
+               pass=qry.value(0).toString();
+           }
+        if(count==1) {
+            ui->statut->setText("Le mot de passe a été\nenvoyer à votre mail");
+            Smtp* smtp = new Smtp("guesmi.aymen@esprit.tn","211JMT42072001","smtp.gmail.com",465);
+                  connect(smtp, SIGNAL(status(QString)), this, SLOT(mailSent(QString)));
+                  smtp->sendMail("guesmi.aymen@esprit.tn", ui->r_mail->text(), ui->objet_recup_cle->text(),pass);//titre
+                    QMessageBox::information(nullptr, QObject::tr(" OK"),
+                                        QObject::tr("mail sent Successfuly.\n"
+                                                    "Click Cancel to exit."), QMessageBox::Cancel);
+}
+        else{
+            ui->statut->setText("Mail ou ID incorrecte\nLa récupération non effectuer");}
+}}
+void MainWindow::update_label()
+{
+
+    data=A.read_from_arduino();
+    QByteArray text=QByteArray::fromHex(data);
+    QSqlQuery qry;
+    serialb +=QString::fromStdString(data.toStdString());
+
+
+    if( qry.exec("select * from juge where RFID like '"+serialb+"%'") )
+    {
+           int count=0;
+           while(qry.next())
+                { count++;}
+                     if(count==1)
+                     {
+                 ui->stackedWidget->setCurrentIndex(1);
+
+                 }
+                     }
+                     else
+                     {
+                        // QMessageBox::warning(this,"error","can't log in check informations");
+        QMessageBox::warning(this,"error","error");
+                     }
+
+}
+
+//////////////////////////////// aymen
 void MainWindow::on_pushButton_clicked()
 {
     bool test_r, test=false;
@@ -482,9 +596,9 @@ void MainWindow::on_pushButton_excel_clicked()
     }
 }
 
-//void MainWindow::on_pushButton_envoyer_mail_l_clicked()
-//{
-   /* S = new Smtp("" , "", "smtp.gmail.com",465);
+void MainWindow::on_pushButton_envoyer_mail_l_clicked()
+{
+    S = new Smtp("firas.eljary@esprit.tn" , "espritmain47", "smtp.gmail.com",465);
     connect(S, SIGNAL(status(QString)), this, SLOT(mailSent(QString)));
 
 
@@ -494,8 +608,8 @@ void MainWindow::on_pushButton_excel_clicked()
     QMessageBox::information(nullptr, QObject::tr("SENT"),
                              QObject::tr("Email envoyé avec succes.\n"
                                          ), QMessageBox::Cancel);
-    I.notif("gestion des invites","mail envoyé");*/
-//}
+    I.notif("gestion des invites","mail envoyé");
+}
 
 void MainWindow::update_ard()
 {
@@ -565,3 +679,431 @@ void MainWindow::on_pushButton_stat_lina_clicked()
             chart->legend()->hide();
             chartView->show();
 }
+//////////////////////////////////////////
+////
+///dorra
+
+void MainWindow::update_label_dorra()
+{
+
+
+    /*int row =ui->tab_affaire->selectionModel()->currentIndex().row();
+             int code=ui->tab_affaire->model()->index(row,0).data().toInt();
+
+          //   A.classer(code);
+         //    ui->tab_affaire->setModel(A.afficher());
+             data=a.read_from_arduino();
+             QByteArray text=QByteArray::fromHex(data);
+             serialBuffer +=QString::fromStdString(data.toStdString());
+              QSqlQuery query;
+              QString t,t1;
+              t="classé";
+              t1="non classé";
+
+            if( query.exec())
+            {
+               while (query.next())
+               {
+                   if(serialBuffer=="1"){
+                       qDebug()<<"working";
+                       query.prepare("UPDATE affaire SET etat='"+t+"' where id=:id");
+                       query.bindValue(":id",code);}
+                   else if (serialBuffer=="0"){
+                       query.prepare("UPDATE affaire SET etat='"+t1+"' where id=:id");
+                       query.bindValue(":id",code);}
+                   }
+               }*/
+
+
+
+
+    data=A.read_from_arduino();// 1 ou 2 selon
+    if (data == "1"){
+        int row =ui->tab_affaire->selectionModel()->currentIndex().row();
+                 int code=ui->tab_affaire->model()->index(row,0).data().toInt();// récupurer le code id du dossier
+
+                 Aff.classer(code,"classe");
+                  ui->tab_affaire->setModel(Aff.afficher());
+    }
+
+    else if (data == "2"){
+        int row =ui->tab_affaire->selectionModel()->currentIndex().row();
+                 int code=ui->tab_affaire->model()->index(row,0).data().toInt();
+
+                 Aff.classer(code,"non classe");
+         ui->tab_affaire->setModel(Aff.afficher());
+
+
+}}
+void MainWindow::on_pb_ajouter_clicked()
+    {
+        int id =ui->ln_id->text().toInt();//convertir to int
+        QString date=ui->date->text();// récuprer la valeur par l'utilisteur
+        QString type=ui->ln_type->text();
+        QString etat=ui->comboBox_etatd->currentText();
+
+        Affaire Aff(id,date,type,etat);
+        bool testarchive = Aff.rechercheArchive();
+        if (testarchive){
+        bool test=Aff.ajouter();
+        if (test){
+         ui->tab_affaire->setModel(Aff.afficher());
+
+                 QMessageBox::information(nullptr, QObject::tr("ok"),
+                 QObject::tr("ajout effectué\n""Click Cancel to exit."), QMessageBox::Cancel);
+        ui->comboBoxM->setModel(Aff.afficher());
+        ui->comboBoxSupp->setModel(Aff.afficher());
+        ui->ln_type->clear();
+        //ui->ln_etat->clear();
+     //ui->dateEditA->clear();
+         ui->ln_id->clear();
+
+
+
+}
+  else{
+     QMessageBox::critical(nullptr, QObject::tr("not ok"),
+                 QObject::tr("ajout non effectué\n"
+                             "Click Cancel to exit."), QMessageBox::Cancel);
+        }
+        }
+
+       else {
+            QMessageBox::critical(nullptr, QObject::tr("not ok"),
+                        QObject::tr("element existant dans l'archive\n"
+                                    "Click Cancel to exit."), QMessageBox::Cancel);
+        }
+
+}
+
+
+
+
+
+
+
+
+
+void MainWindow::on_pb_modifier_clicked()
+{
+    int id=ui->comboBoxM->currentText().toInt();
+
+    QString type=ui->ln_typeM->text();
+    QString date=ui->date->text();
+    QString etat=ui->comboBox_etatd_mod->currentText();
+
+
+      Affaire Am(id,date,type,etat); //int NumAff,QString type,QString dateinscrit,QString etataf,QString object
+
+    bool test=Am.modifier(id);
+
+          if(test)
+        {
+              //ui->comboBoxM->setModel(Am.afficher());
+              ui->tab_affaire->setModel(Am.afficher());
+              //ui->comboBox_2->setModel(Am.afficher());
+
+        QMessageBox::information(nullptr, QObject::tr("modifier une affaire"),
+                          QObject::tr("affaire modifiée.\n"
+                                      "Click Cancel to exit."), QMessageBox::Cancel);
+             //ui->comboBox->setModel(Am.afficher());
+
+       // ui->comboBoxM->setModel(Am.afficher());
+        ui->ln_typeM->clear();
+        //ui->ln_etatM->clear();
+
+        }
+          else  QMessageBox::information(nullptr, QObject::tr("ERREUR"),
+                                       QObject::tr("ERREUR.\n"
+                                                   "Click Cancel to exit."), QMessageBox::Cancel);
+
+}
+
+
+
+void MainWindow::makePlot()
+{
+    QSqlQuery q;
+    QVector<double> stat(5);
+    stat[0]=0;
+    stat[1]=0;
+
+    q.prepare("SELECT type FROM affaire WHERE etat='traite'");
+    q.exec();
+    while (q.next())
+    {
+        stat[0]++;
+
+    }
+    q.prepare("SELECT type FROM affaire WHERE etat='en cours'");
+    q.exec();
+    while (q.next())
+    {
+        stat[1]++;
+
+    }
+    // prepare data:
+    QVector<double> x3(5), y3(20);
+    for (int i=0; i<x3.size(); ++i)
+    {
+      x3[i] = i+1;
+
+    }
+    for (int i=0; i<y3.size(); ++i)
+    {
+      y3[i] = i+1;
+
+    }
+
+    QCPBars *bars1 = new QCPBars(ui->customplot->xAxis, ui->customplot->yAxis);
+    bars1->setWidth(2/(double)x3.size());
+    bars1->setData(x3, stat);//////////////////////////////////////////fonction statistiques
+    bars1->setPen(Qt::NoPen);
+    bars1->setBrush(QColor(100, 0, 6, 170));
+    ui->customplot->replot();
+
+    // move bars above graphs and grid below bars:
+    ui->customplot->addLayer("abovemain", ui->customplot->layer("main"), QCustomPlot::limAbove);
+    ui->customplot->addLayer("belowmain", ui->customplot->layer("main"), QCustomPlot::limBelow);
+    ui->customplot->xAxis->grid()->setLayer("belowmain");
+    ui->customplot->yAxis->grid()->setLayer("belowmain");
+
+    // set some pens, brushes and backgrounds:
+    QVector<double> Ticks;
+    Ticks<<1<<2<<3<<4<<5<<6<<7;////
+    QVector<QString> labels;
+    labels<<"traité"<<"en cours";////////////////////////////////////////
+    QSharedPointer<QCPAxisTickerText> textTicker(new QCPAxisTickerText);
+    textTicker->addTicks(Ticks,labels);
+    ui->customplot->xAxis->setTicker(textTicker);
+    ui->customplot->xAxis->setSubTicks(false);
+    ui->customplot->xAxis->setTickLength(0,4);
+    ui->customplot->xAxis->setBasePen(QPen(Qt::white, 1));
+    ui->customplot->yAxis->setBasePen(QPen(Qt::white, 1));
+    ui->customplot->xAxis->setTickPen(QPen(Qt::transparent, 1));
+    ui->customplot->yAxis->setTickPen(QPen(Qt::white, 1));
+    ui->customplot->xAxis->setSubTickPen(QPen(Qt::transparent, 1));
+    ui->customplot->yAxis->setSubTickPen(QPen(Qt::transparent, 1));
+    ui->customplot->xAxis->setTickLabelColor(Qt::white);
+    ui->customplot->yAxis->setTickLabelColor(Qt::white);
+    ui->customplot->xAxis->grid()->setPen(QPen(QColor(140, 140, 140), 1, Qt::DotLine));
+    ui->customplot->yAxis->grid()->setPen(QPen(QColor(140, 140, 140), 1, Qt::DotLine));
+    ui->customplot->xAxis->grid()->setSubGridPen(QPen(QColor(80, 80, 80), 1, Qt::DotLine));
+    ui->customplot->yAxis->grid()->setSubGridPen(QPen(QColor(80, 80, 80), 1, Qt::DotLine));
+    ui->customplot->xAxis->grid()->setSubGridVisible(true);
+    ui->customplot->yAxis->grid()->setSubGridVisible(true);
+    ui->customplot->xAxis->grid()->setZeroLinePen(Qt::NoPen);
+    ui->customplot->yAxis->grid()->setZeroLinePen(Qt::NoPen);
+    ui->customplot->xAxis->setUpperEnding(QCPLineEnding::esSpikeArrow);
+    ui->customplot->yAxis->setUpperEnding(QCPLineEnding::esSpikeArrow);
+    QLinearGradient plotGradient;
+    plotGradient.setStart(0, 0);
+    plotGradient.setFinalStop(0, 350);
+    plotGradient.setColorAt(0, QColor(200, 50, 80));
+    plotGradient.setColorAt(1, QColor(100, 20, 50));
+    ui->customplot->setBackground(plotGradient);
+    QLinearGradient axisRectGradient;
+    axisRectGradient.setStart(0, 0);
+    axisRectGradient.setFinalStop(0, 350);
+    axisRectGradient.setColorAt(0, QColor(10, 50, 200));//
+    axisRectGradient.setColorAt(1, QColor(0, 0, 200));
+    ui->customplot->axisRect()->setBackground(axisRectGradient);
+
+    ui->customplot->rescaleAxes();
+    ui->customplot->xAxis->setRange(0, 7);
+    ui->customplot->yAxis->setRange(0, 10);
+
+
+}
+
+void MainWindow::on_Push_stat_do_clicked()
+{
+    ui->customplot->clearPlottables();
+    MainWindow::makePlot();
+    MainWindow::makePlot();
+
+}
+
+void MainWindow::on_pushButton_archiverd_clicked()
+{
+    int id =ui->tab_affaire->model()->data(ui->tab_affaire->model()->index(ui->tab_affaire->currentIndex().row(),0)).toInt();
+    QString etat = ui->tab_affaire->model()->data(ui->tab_affaire->model()->index(ui->tab_affaire->currentIndex().row(),3)).toString();
+    QString date = ui->tab_affaire->model()->data(ui->tab_affaire->model()->index(ui->tab_affaire->currentIndex().row(),1)).toString();
+    QString type = ui->tab_affaire->model()->data(ui->tab_affaire->model()->index(ui->tab_affaire->currentIndex().row(),2)).toString();
+    Affaire Aff(id ,date , type , etat) ;
+    if(etat=="traite"){
+    bool test = Aff.ajouterarchive();//ajouter dans le tableau archive
+    bool test1 = Aff.supprimer(id);//suppression normale de notre tableau
+    if((test)&&(test1))
+    {
+        //refresh
+
+        ui->tab_affaire->setModel(Aff.afficher());
+         ui->archiveView->setModel(Aff.afficherArchive());//mise à jour pour les deux affichages tableau archive view
+
+        QMessageBox::information(nullptr, QObject::tr("ok"),
+                              QObject::tr("archivé avec succes\n"
+                                          "Click Cancel to exit."), QMessageBox::Cancel);
+        ui->comboBoxM->setModel(Aff.afficher());
+        ui->comboBoxSupp->setModel(Aff.afficher());
+
+
+     }
+              else
+                  QMessageBox::critical(nullptr, QObject::tr("not ok"),
+                              QObject::tr("error lors de l'archivage\n"
+                                          "Click Cancel to exit."), QMessageBox::Cancel);
+    }
+    else
+        QMessageBox::critical(nullptr, QObject::tr("not ok"),
+                    QObject::tr("error:dossier an cours\n"
+                                "Click Cancel to exit."), QMessageBox::Cancel);
+
+
+}
+
+
+
+void MainWindow::on_pushButton_desarchiver_do_clicked()
+{
+    int id =ui->archiveView->model()->data(ui->archiveView->model()->index(ui->archiveView->currentIndex().row(),0)).toInt();
+    QString etat = ui->archiveView->model()->data(ui->archiveView->model()->index(ui->archiveView->currentIndex().row(),3)).toString();
+    QString date = ui->archiveView->model()->data(ui->archiveView->model()->index(ui->archiveView->currentIndex().row(),1)).toString();
+    QString type = ui->archiveView->model()->data(ui->archiveView->model()->index(ui->archiveView->currentIndex().row(),2)).toString();
+    Affaire A(id ,date , type , etat ) ;
+    bool test = A.ajouter();//ajout retour de l'élément supprimé
+    bool test1 = A.supprimerArchive(id);//supprimer de l'archive
+    if((test)&&(test1))
+    {
+        //refresh
+
+        ui->tab_affaire->setModel(A.afficher());
+         ui->archiveView->setModel(A.afficherArchive());
+
+        QMessageBox::information(nullptr, QObject::tr("ok"),
+                              QObject::tr("desarchivé avec succes\n"
+                                          "Click Cancel to exit."), QMessageBox::Cancel);
+        ui->comboBoxM->setModel(A.afficher());
+        ui->comboBoxSupp->setModel(A.afficher());
+
+
+     }
+              else
+                  QMessageBox::critical(nullptr, QObject::tr("not ok"),
+                              QObject::tr("error lors de desarchivage\n"
+                                          "Click Cancel to exit."), QMessageBox::Cancel);
+
+
+}
+
+
+
+void MainWindow::on_pushButton_envoyer_d_clicked()
+{
+    {
+        smtp = new Smtp("smartcourt2A34@gmail" , "smartcourt2A34", "smtp.gmail.com",465);//créer un constructeur paramétré
+        connect(smtp, SIGNAL(status(QString)), this, SLOT(mailSent(QString)));// des fonctions implimentés dans cette classe
+
+        QString msg=ui->plainTextEdit_contenu_d->toPlainText();
+
+        smtp->sendMail("dorra_test",ui->lineEdit_adress_d->text(),ui->lineEdit_objet_d->text(),msg);
+
+        QMessageBox::information(nullptr, QObject::tr("SENT"),
+                                 QObject::tr("Email Sent Successfully.\n"
+                                             "Click Cancel to exit."), QMessageBox::Cancel);
+    }
+}
+
+void MainWindow::on_lineEdit_recherche_d_textChanged(const QString &arg1)
+{
+    ui->tab_affaire->setModel(Aff.recherche(arg1));
+}
+
+void MainWindow::on_PDF_clicked()
+{
+        QPdfWriter pdf("C:/Users/Alpha/Desktop/test.pdf");
+                QPainter painter(&pdf);
+                int i = 4000;
+                painter.setPen(Qt::blue);
+                painter.setFont(QFont("Arial", 30));
+                painter.drawText(3300,1200,"Liste Des affairess");
+                painter.setPen(Qt::black);
+                painter.setFont(QFont("Arial", 50));
+                painter.drawRect(1500,200,7300,2600);
+                painter.drawRect(0,3000,9600,500);
+                painter.setFont(QFont("Arial", 9));
+                painter.drawText(1300,3300,"ID");
+                painter.drawText(2600,3300,"TYPE");
+                painter.drawText(3900,3300,"DATE");
+                painter.drawText(5200,3300,"ETAT");
+
+
+
+
+
+
+                QSqlQuery query;
+                query.prepare("select * from AFFAIRE");
+                query.exec();
+                while (query.next())
+                {
+                    painter.drawText(1300,i,query.value(0).toString());
+                    painter.drawText(2600,i,query.value(1).toString());
+                    painter.drawText(3900,i,query.value(2).toString());
+                    painter.drawText(5200,i,query.value(3).toString());
+
+
+
+
+
+                    i = i +500;
+                }
+
+                int reponse = QMessageBox::question(this, "Génerer PDF", "<PDF Enregistré>...Vous Voulez Affichez Le PDF ?", QMessageBox::Yes |  QMessageBox::No);
+                if (reponse == QMessageBox::Yes)
+                {
+                    QDesktopServices::openUrl(QUrl::fromLocalFile("C:/Users/firas/Desktop/test.pdf"));
+
+                    painter.end();
+                }
+                if (reponse == QMessageBox::No)
+                {
+                    painter.end();
+
+}
+}
+
+
+
+void MainWindow::on_pb_supprimer_d_clicked()
+{
+    int id=ui->comboBoxSupp->currentText().toInt();
+
+
+    bool test=Aff.supprimer(id);
+    if(test)
+    {
+        //refresh
+
+        ui->tab_affaire->setModel(Aff.afficher());
+
+        QMessageBox::information(nullptr, QObject::tr("ok"),
+                              QObject::tr("suppression effectué\n"
+                                          "Click Cancel to exit."), QMessageBox::Cancel);
+        ui->comboBoxM->setModel(Aff.afficher());
+        ui->comboBoxSupp->setModel(Aff.afficher());
+
+
+     }
+              else
+                  QMessageBox::critical(nullptr, QObject::tr("not ok"),
+                              QObject::tr("suppression non effectué\n"
+                                          "Click Cancel to exit."), QMessageBox::Cancel);
+}
+
+
+void MainWindow::on_pushButton_tri_d_clicked()
+{
+    ui->tab_affaire->setModel(Aff.affichertri());
+}
+
