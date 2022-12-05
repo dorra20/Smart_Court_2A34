@@ -30,6 +30,7 @@ SOURCES += \
     affaire.cpp \
     arduino.cpp \
     audiance.cpp \
+    avocat.cpp \
     exportexcelobject.cpp \
     invite.cpp \
     juge.cpp \
@@ -44,6 +45,7 @@ HEADERS += \
     affaire.h \
     arduino.h \
     audiance.h \
+    avocat.h \
     exportexcelobject.h \
     invite.h \
     juge.h \

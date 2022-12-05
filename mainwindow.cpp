@@ -70,7 +70,11 @@ MainWindow::MainWindow(QWidget *parent):
           ui->dateTimeEdit->setDateTime(date);
           ui->tab->setModel(aud.afficher());
 
-////////////////////////////////////
+//////////////////////////////////// yaine
+          ui->le_num_tel->setValidator(new QIntValidator(0, 99999999, this));
+          ui->tab_avocats->setModel(av.afficher());
+
+/////////////////////////////////////////////
 }
 
 MainWindow::~MainWindow()
@@ -111,7 +115,7 @@ void MainWindow::on_b_connexion_clicked()
            }
         if(count==1){
             ui->statut->setText("Connexion effectuée...");
-            ui->stackedWidget->setCurrentIndex(1);
+            ui->stackedWidget->setCurrentIndex(2);
             ui->login_id->clear();
             ui->login_pass->clear();
         }
@@ -160,7 +164,7 @@ void MainWindow::update_label()
                 { count++;}
                      if(count==1)
                      {
-                 ui->stackedWidget->setCurrentIndex(1);
+                 ui->stackedWidget->setCurrentIndex(2);
 
                  }
                      }
@@ -215,7 +219,8 @@ void MainWindow::on_b_supp_clicked()
 }
   else
       msgBox.setText("Echec du Suppression");
-      msgBox.exec();
+
+  msgBox.exec();
 }
 
 void MainWindow::on_b_maj_clicked()
@@ -1429,7 +1434,7 @@ void MainWindow::on_pushButton_menu_invites_clicked()
     }while((nom && mp) && (Nom.isEmpty() || mdp.isEmpty()));
       if (nom && mp)
       {
-      if (Nom == "invites" and mdp == "admin")
+      if (Nom == "invites" && mdp == "admin")
       {
           msgBox.setText("Connecté !");
           msgBox.setIcon(QMessageBox::Information);
@@ -1473,7 +1478,7 @@ void MainWindow::on_pushButton_men_audience_clicked()
     }while((nom && mp) && (Nom.isEmpty() || mdp.isEmpty()));
       if (nom && mp)
       {
-      if (Nom == "audiences" and mdp == "admin")
+      if (Nom == "audiences" && mdp == "admin")
       {
           msgBox.setText("Connecté !");
           msgBox.setIcon(QMessageBox::Information);
@@ -1515,7 +1520,7 @@ void MainWindow::on_pushButton_menu_last_clicked()
     }while((nom && mp) && (Nom.isEmpty() || mdp.isEmpty()));
       if (nom && mp)
       {
-      if (Nom == "avocats" and mdp == "admin")
+      if (Nom == "avocat" && mdp == "admin")
       {
           msgBox.setText("Connecté !");
           msgBox.setIcon(QMessageBox::Information);
@@ -1557,7 +1562,7 @@ void MainWindow::on_pushButton_menu_affaires_clicked()
     }while((nom && mp) && (Nom.isEmpty() || mdp.isEmpty()));
       if (nom && mp)
       {
-      if (Nom == "affaire" and mdp == "admin")
+      if (Nom == "affaire" && mdp == "admin")
       {
           msgBox.setText("Connecté !");
           msgBox.setIcon(QMessageBox::Information);
@@ -1578,3 +1583,180 @@ void MainWindow::on_pushButton_deco_clicked()
 {
     ui->stackedWidget->setCurrentIndex(0);
 }
+
+
+////////////////////////////////////////
+///
+void MainWindow::on_pb_ajouter_2_clicked()
+{
+    QString num_tel=ui->le_num_tel->text();
+    QString nom=ui->le_nom_2->text();
+    QString prenom=ui->le_prenom_2->text();
+    QString type=ui->le_type->currentText();
+    Avocat a(num_tel,nom,prenom,type);
+    bool test = a.ajouter();
+        if (test)
+        {
+            QMessageBox::information(nullptr,QObject::tr("OK"),
+                                     QObject::tr("Ajout effectué \n" "Click cancel to exit."),QMessageBox::Cancel);
+        ui->tab_avocats->setModel(a.afficher());
+        }
+        else
+            QMessageBox::critical(nullptr,QObject::tr("NOT OK"),
+                                     QObject::tr("Ajout non effectué \n" "Click cancel to exit."),QMessageBox::Cancel);
+
+}
+
+
+void MainWindow::on_pb_supprimer_2_clicked()
+{
+    Avocat a1; a1.setnum(ui->le_num_tel_supp->text());
+    bool test=a1.supprimer(a1.getnumtel());
+    if (test)
+    {
+        QMessageBox::information(nullptr,QObject::tr("OK"),
+                                 QObject::tr("suppression effectué \n" "Click cancel to exit."),QMessageBox::Cancel);
+      ui->tab_avocats->setModel(av.afficher());
+    }
+    else
+        QMessageBox::critical(nullptr,QObject::tr("NOT OK"),
+                                 QObject::tr("suppression non effectué \n" "Click cancel to exit."),QMessageBox::Cancel);
+}
+
+
+void MainWindow::on_linecomboBox_activated(int index)
+{
+    QString val= ui->linecomboBox->currentText();
+      ui->tab_avocats->setModel(av.trier());
+}
+
+
+void MainWindow::on_pb_modifier_2_clicked()
+{
+    QString num_tel=ui->num_up_2->text();
+     QString nom=ui->nom_up_2->text();
+     QString prenom=ui->prenom_up_2->text();
+     QString type=ui->type_up->currentText();
+     Avocat A(num_tel, nom, prenom,type);
+     bool test=A.modifier();
+     if (test)
+     {
+         QMessageBox::information(nullptr,QObject::tr("OK"),
+                                  QObject::tr("modification effectué \n" "Click cancel to exit."),QMessageBox::Cancel);
+       ui->tab_avocats->setModel(A.afficher());
+     }
+     else
+         QMessageBox::critical(nullptr,QObject::tr("NOT OK"),
+                                  QObject::tr("modification non effectué \n" "Click cancel to exit."),QMessageBox::Cancel);
+}
+
+
+void MainWindow::on_pb_rechercher_clicked()
+{
+    QString num_tel=ui->le_num_tel_recherche->text();
+     ui->tab_avocats_2->setModel(av.recherche(num_tel));
+}
+
+
+void MainWindow::on_pb_stat_clicked()
+{
+    QSqlQuery q1,q2,q3,q4,q5;
+        qreal tot=0,c1=0,c2=0,c3=0,c4=0;
+        q1.prepare("Select * from AVOCAT");
+        if(q1.exec())
+        {
+            while (q1.next())
+            {
+                tot++;
+            }
+        }
+        q2.prepare("Select * from AVOCAT where TYPE ='droit des personnes'");
+        if(q2.exec())
+        {
+            while (q2.next())
+            {
+                c1++;
+            }
+        }
+        q3.prepare("Select * from AVOCAT where TYPE ='droit immobilier'");
+        if(q3.exec())
+        {
+            while (q3.next())
+            {
+                c2++;
+            }
+        }
+        q4.prepare("Select * from AVOCAT where TYPE ='droit public'");
+        if(q4.exec())
+        {
+            while (q4.next())
+            {
+                c3++;
+            }
+        }
+        q5.prepare("Select * from AVOCAT where TYPE ='droit commercial'");
+        if(q5.exec())
+        {
+                while (q5.next())
+                {
+                    c4++;
+                }
+            }
+            c1=c1/tot;
+            c2=c2/tot;
+            c3=c3/tot;
+            c4=c4/tot;
+
+            QPieSeries *series = new QPieSeries();
+                    series->append("droit des personnes",c1);
+                    series->append("droit immobilier",c2);
+                    series->append("droit public",c3);
+                    series->append("droit commercial",c4);
+                    QPieSlice *slice0 = series->slices().at(0);
+                    slice0->setExploded();
+                    slice0->setLabelVisible();
+                    slice0->setPen(QPen(Qt::darkGray, 2));
+                    slice0->setBrush(Qt::gray);
+                    QPieSlice *slice1 = series->slices().at(1);
+                    slice1->setExploded();
+                    slice1->setLabelVisible();
+                    slice1->setPen(QPen(Qt::darkRed, 2));
+                    slice1->setBrush(Qt::red);
+                    QPieSlice *slice2 = series->slices().at(2);
+                    slice2->setExploded();
+                    slice2->setLabelVisible();
+                    slice2->setPen(QPen(Qt::darkYellow, 2));
+                    slice2->setBrush(Qt::yellow);
+                    QPieSlice *slice3 = series->slices().at(3);
+                    slice3->setExploded();
+                    slice3->setLabelVisible();
+                    slice3->setPen(QPen(Qt::darkGreen, 2));
+                    slice3->setBrush(Qt::green);
+                    QChart *chart = new QChart();
+                    chart->addSeries(series);
+                    chart->setTitle("most types");
+                                chart->setAnimationOptions(QChart::AllAnimations);
+                                chart->legend()->hide();
+                                QChartView *chartView = new QChartView(chart);
+                                chartView->setRenderHint(QPainter::Antialiasing);
+                                QGridLayout *layout = new QGridLayout();
+                                layout->addWidget(chartView);
+                                ui->stat->setLayout(layout);
+
+}
+
+
+void MainWindow::on_pb_pdf_2_clicked()
+{
+    QString num_tel=ui->num_tel_pdf->text();
+       QString z=av.pdf(num_tel);
+       ui->tab_avocats_3->setText(z);
+       QPrinter printer;
+           printer.setPrinterName("Avocat");
+           printer.setPageSize(QPrinter::A4);
+           QPrintDialog dialog(&printer,this);
+           if (dialog.exec()== QDialog::Rejected)
+           return;
+           ui->tab_avocats_3->print(&printer);
+}
+

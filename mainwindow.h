@@ -54,6 +54,10 @@
 #include <QtPrintSupport/QPrinterInfo>
 #include <QPrinter>
 /////////////
+///
+///
+#include "avocat.h"
+
 namespace Ui {
 class MainWindow;
 }
@@ -189,6 +193,22 @@ private slots:
 
     void on_pushButton_deco_clicked();
 
+    //////////////////////////
+    ///
+    void on_pb_ajouter_2_clicked();
+
+    void on_pb_supprimer_2_clicked();
+
+    void on_linecomboBox_activated(int index);
+
+    void on_pb_modifier_2_clicked();
+
+    void on_pb_rechercher_clicked();
+
+    void on_pb_stat_clicked();
+
+    void on_pb_pdf_2_clicked();
+
 private:
     Ui::MainWindow *ui;
     Juge J;
@@ -201,6 +221,7 @@ private:
     QByteArray data;
     QString serialb;
     Audiance aud ;
+    Avocat av;
 };
 
 #endif // MAINWINDOW_H
